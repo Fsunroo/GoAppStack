@@ -1,0 +1,74 @@
+version: '3'
+
+services:
+
+  mysql-master:
+    image: mysql:5.7
+    container_name: proxysql-mysql-replication-master
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: sbtest
+    volumes:
+      - ./master/my.cnf:/etc/mysql/my.cnf
+      - ./master/data:/var/lib/mysql
+      - ./master/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - 3306:3306
+    networks:
+      - db-net 
+
+  mysql-slave1:
+    image: mysql:5.7
+    container_name: proxysql-mysql-replication-slave1
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: sbtest
+    volumes: #
+      - ./slave/my-slave1.cnf:/etc/mysql/my.cnf
+      - ./slave/data/slave1:/var/lib/mysql
+      - ./slave/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - 3307:3306
+    depends_on:
+      - mysql-master
+    networks:
+      - db-net
+
+  mysql-slave2:
+    image: mysql:5.7
+    container_name: proxysql-mysql-replication-slave2
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: sbtest
+    volumes:
+      - ./slave/my-slave2.cnf:/etc/mysql/my.cnf
+      - ./slave/data/slave2:/var/lib/mysql
+      - ./slave/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - 3308:3306
+    depends_on:
+      - mysql-master
+    networks:
+      - db-net
+
+  proxysql:
+    image: proxysql/proxysql:2.0.12
+    container_name: proxysql
+    ports:
+      - 6032:6032
+      - 6033:6033
+    volumes:
+      - ./proxysql/proxysql.cnf:/etc/proxysql.cnf
+      - ./proxysql/data:/var/lib/proxysql
+    networks:
+      - db-net
+    depends_on: # the proxy will start after all the mysql instance has started
+      - mysql-master
+      - mysql-slave1
+      - mysql-slave2
+
+
+#creating a common L2 Bridge network for the Docker containers internal communication
+networks:
+  db-net:
+    driver: bridge

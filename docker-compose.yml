@@ -1,0 +1,44 @@
+version: '3'
+services:
+
+  instance1:
+    build:
+      context: ./api
+    ports:
+      - "8081:8080"  # Map host port 8081 to container port 8080
+    networks:
+      - database_db-net
+
+  instance2:
+    build:
+      context: ./api
+    ports:
+      - "8082:8080"  # Map host port 8082 to container port 8080
+
+    networks:
+      - database_db-net
+
+  instance3:
+    build:
+      context: ./api
+    ports:
+      - "8083:8080"  # Map host port 8083 to container port 8080
+    networks:
+      - database_db-net
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - database_db-net
+
+networks:
+  database_db-net:
+    external: 
+      name: database_db-net
+
+volumes:
+  database_data: {}
